@@ -59,6 +59,15 @@ public:
     static uint32_t GetListenerCount(uint32_t eventId);
 
     static uint32_t GetListenerCount(std::string eventId);
+
+    static void On(std::function<void(uint32_t, CEventData)> callback);
+
+    static void On(std::function<void(const char*, CEventData)> callback);
+
+    static std::function<void(uint32_t, CEventData)> u32Callback;
+    static std::function<void(const char*, CEventData)> stringCallback;
+    static std::mutex u32Mutex;
+    static std::mutex stringMutex;
 };
 }
 

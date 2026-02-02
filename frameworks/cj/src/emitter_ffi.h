@@ -28,7 +28,7 @@ extern "C" {
         void (*callbackRef)(const CEventData data);
     };
 
-    // CommonEventManager ffi apis
+    // Emitter ffi apis
     FFI_EXPORT int32_t CJ_OnWithId(uint32_t eventId, CEventCallback callbackInfo);
     FFI_EXPORT int32_t CJ_OnWithStringId(char* eventId, CEventCallback callbackInfo);
     FFI_EXPORT int32_t CJ_OnceWithId(uint32_t eventId, CEventCallback callbackInfo);
