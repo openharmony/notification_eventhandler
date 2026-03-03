@@ -27,6 +27,7 @@
 #include <string>
 #include <unistd.h>
 #include "async_stack_adapter.h"
+#include "local_handle_adapter.h"
 
 using namespace testing::ext;
 using namespace OHOS;
@@ -105,6 +106,28 @@ void MockSetStackIdFunc(uint64_t stackId)
         stackId += 1;
     } else {
         stackId = stackId * temp;
+    }
+}
+
+void MockOpenFunc(void* napiValue, void** handle)
+{
+    if (napiValue == nullptr) {
+        return;
+    }
+
+    if (handle == nullptr) {
+        return;
+    }
+}
+
+void MockCloseFunc(void* napiValue, void* handle)
+{
+    if (napiValue == nullptr) {
+        return;
+    }
+    
+    if (handle == nullptr) {
+        return;
     }
 }
 
@@ -515,4 +538,24 @@ HWTEST_F(LibEventHandlerTest, AsyncStack_004, TestSize.Level1)
         //execute MockCollectFunc
         AsyncStackAdapter::GetInstance().EventCollectAsyncStack(1);
     }
+}
+
+/*
+ * @tc.name: LocalHandle_001
+ * @tc.desc: LocalHandle_001 test
+ * @tc.type: FUNC
+ */
+HWTEST_F(LibEventHandlerTest, LocalHandle_001, TestSize.Level1)
+{
+    auto runner = EventRunner::GetMainEventRunner();
+    auto handler = std::make_shared<EventHandler>(runner);
+    EXPECT_NE(nullptr, handler);
+    runner->RegisterLocalHandleCallback(MockOpenFunc, MockCloseFunc);
+    void* env = &handler;
+    runner->EventSetEnvToHandler(env);
+    void* result = runner->GetHandleEnv();
+    EXPECT_NE(nullptr, result);
+    void* localHandle = nullptr;
+    runner->EventOpenLocalHandle(&localHandle);
+    runner->EventCloseLocalHandle(localHandle);
 }
