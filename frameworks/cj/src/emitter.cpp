@@ -17,21 +17,27 @@
 #include <unordered_set>
 #include <map>
 #include <memory>
+#include <variant>
 
 #include "emitter_log.h"
 #include "inner_event.h"
 #include "event_handler_impl.h"
 #include "cj_fn_invoker.h"
 #include "emitter.h"
+#include "parameter.h"
 
 using InnerEvent = OHOS::AppExecFwk::InnerEvent;
 using Priority = OHOS::AppExecFwk::EventQueue::Priority;
 
 namespace OHOS::EventsEmitter {
     const int32_t SUCCESS = 0;
-
+    const int32_t API_VERSION_24 = 24;
     static std::mutex g_emitterInsMutex;
     static std::map<InnerEvent::EventId, std::unordered_set<std::shared_ptr<CallbackInfo>>> g_emitterImpls;
+    std::function<void(uint32_t, CEventData)> Emitter::u32Callback = nullptr;
+    std::function<void(const char*, CEventData)> Emitter::stringCallback = nullptr;
+    std::mutex Emitter::u32Mutex;
+    std::mutex Emitter::stringMutex;
     std::shared_ptr<EventHandlerImpl> eventHandler = EventHandlerImpl::GetEventHandler();
 
     CallbackImpl::CallbackImpl(std::string name, std::function<void(CEventData)> callback)
@@ -56,7 +62,7 @@ namespace OHOS::EventsEmitter {
 
     void EmitWithEventData(InnerEvent::EventId eventId, uint32_t priority, CEventData data)
     {
-        if (!IsExistValidCallback(eventId)) {
+        if (GetSdkApiVersion() < API_VERSION_24 && !IsExistValidCallback(eventId)) {
             LOGE("Invalid callback");
             return;
         }
@@ -250,14 +256,8 @@ namespace OHOS::EventsEmitter {
         params = nullptr;
     }
 
-    void ProcessCallback(const InnerEvent::Pointer& event,
-        std::unordered_set<std::shared_ptr<CallbackInfo>>& callbackInfos)
+    void ProcessCallback(CEventData &eventData, std::unordered_set<std::shared_ptr<CallbackInfo>>& callbackInfos)
     {
-        auto value = event->GetUniqueObject<CEventData>();
-        CEventData eventData = { .parameters = nullptr, .size = 0};
-        if (value != nullptr) {
-            eventData = *value;
-        }
         for (auto callback : callbackInfos) {
             callback->callbackImpl->callback(eventData);
         }
@@ -293,11 +293,51 @@ namespace OHOS::EventsEmitter {
         LOGI("ProcessEvent");
         InnerEvent::EventId eventId = event->GetInnerEventIdEx();
         OutPutEventIdLog(eventId);
-        auto callbackInfos = GetEventCallbacks(eventId);
-        if (callbackInfos.size() <= 0) {
+        auto value = event->GetUniqueObject<CEventData>();
+        CEventData eventData = { .parameters = nullptr, .size = 0};
+        if (value != nullptr) {
+            eventData = *value;
+        } else {
+            LOGE("Failed to get event data.")
+        }
+        if (GetSdkApiVersion() < API_VERSION_24) {
+            auto callbackInfos = GetEventCallbacks(eventId);
+            if (callbackInfos.size() <= 0) {
+                return;
+            }
+            LOGD("size = %{public}zu", callbackInfos.size());
+            ProcessCallback(eventData, callbackInfos);
             return;
         }
-        LOGD("size = %{public}zu", callbackInfos.size());
-        ProcessCallback(event, callbackInfos);
+        if (auto u32Event = std::get_if<uint32_t>(&eventId)) {
+            std::function<void(uint32_t, CEventData)> callbackCopy;
+            {
+                std::lock_guard<std::mutex> lock(Emitter::u32Mutex);
+                callbackCopy = Emitter::u32Callback;
+            }
+            callbackCopy(*u32Event, eventData);
+            return;
+        }
+        if (auto stringEvent = std::get_if<std::string>(&eventId)) {
+            std::function<void(const char*, CEventData)> callbackCopy;
+            {
+                std::lock_guard<std::mutex> lock(Emitter::stringMutex);
+                callbackCopy = Emitter::stringCallback;
+            }
+            callbackCopy((*stringEvent).c_str(), eventData);
+            return;
+        }
+    }
+
+    void Emitter::On(std::function<void(uint32_t, CEventData)> callback)
+    {
+        std::lock_guard<std::mutex> lock(Emitter::u32Mutex);
+        Emitter::u32Callback = callback;
+    }
+
+    void Emitter::On(std::function<void(const char*, CEventData)> callback)
+    {
+        std::lock_guard<std::mutex> lock(Emitter::stringMutex);
+        Emitter::stringCallback = callback;
     }
 }

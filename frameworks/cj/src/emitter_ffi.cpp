@@ -37,91 +37,121 @@ std::shared_ptr<CallbackImpl> CreateCallback(CEventCallback &callbackInfo)
 }
 
 extern "C" {
-    int32_t CJ_OnWithId(uint32_t eventId, CEventCallback callbackInfo)
-    {
-        auto callback = CreateCallback(callbackInfo);
-        if (callback == nullptr) {
-            return MEMORY_ERROR;
-        }
-        return Emitter::On(eventId, callback);
+int32_t CJ_OnWithId(uint32_t eventId, CEventCallback callbackInfo)
+{
+    auto callback = CreateCallback(callbackInfo);
+    if (callback == nullptr) {
+        return MEMORY_ERROR;
     }
+    return Emitter::On(eventId, callback);
+}
 
-    int32_t CJ_OnWithStringId(char* eventId, CEventCallback callbackInfo)
-    {
-        auto callback = CreateCallback(callbackInfo);
-        if (callback == nullptr) {
-            return MEMORY_ERROR;
-        }
-        return Emitter::On(eventId, callback);
+int32_t CJ_OnWithStringId(char* eventId, CEventCallback callbackInfo)
+{
+    auto callback = CreateCallback(callbackInfo);
+    if (callback == nullptr) {
+        return MEMORY_ERROR;
     }
+    return Emitter::On(eventId, callback);
+}
 
-    int32_t CJ_OnceWithId(uint32_t eventId, CEventCallback callbackInfo)
-    {
-        auto callback = CreateCallback(callbackInfo);
-        if (callback == nullptr) {
-            return MEMORY_ERROR;
-        }
-        return Emitter::Once(eventId, callback);
+int32_t CJ_OnceWithId(uint32_t eventId, CEventCallback callbackInfo)
+{
+    auto callback = CreateCallback(callbackInfo);
+    if (callback == nullptr) {
+        return MEMORY_ERROR;
     }
+    return Emitter::Once(eventId, callback);
+}
 
-    int32_t CJ_OnceWithStringId(char* eventId, CEventCallback callbackInfo)
-    {
-        auto callback = CreateCallback(callbackInfo);
-        if (callback == nullptr) {
-            return MEMORY_ERROR;
-        }
-        return Emitter::Once(eventId, callback);
+int32_t CJ_OnceWithStringId(char* eventId, CEventCallback callbackInfo)
+{
+    auto callback = CreateCallback(callbackInfo);
+    if (callback == nullptr) {
+        return MEMORY_ERROR;
     }
+    return Emitter::Once(eventId, callback);
+}
 
-    void CJ_OffWithId(uint32_t eventId)
-    {
-        Emitter::Off(eventId);
-    }
+void CJ_OffWithId(uint32_t eventId)
+{
+    Emitter::Off(eventId);
+}
 
-    void CJ_OffWithString(char* eventId)
-    {
-        Emitter::Off(eventId);
-    }
+void CJ_OffWithString(char* eventId)
+{
+    Emitter::Off(eventId);
+}
 
-    int32_t CJ_OffWithIdCallback(uint32_t eventId, CEventCallback callbackInfo)
-    {
-        auto callback = CreateCallback(callbackInfo);
-        if (callback == nullptr) {
-            return MEMORY_ERROR;
-        }
-        Emitter::Off(eventId, callback);
-        return SUCCESS_CODE;
+int32_t CJ_OffWithIdCallback(uint32_t eventId, CEventCallback callbackInfo)
+{
+    auto callback = CreateCallback(callbackInfo);
+    if (callback == nullptr) {
+        return MEMORY_ERROR;
     }
+    Emitter::Off(eventId, callback);
+    return SUCCESS_CODE;
+}
 
-    int32_t CJ_OffWithStringCallback(char* eventId, CEventCallback callbackInfo)
-    {
-        auto callback = CreateCallback(callbackInfo);
-        if (callback == nullptr) {
-            return MEMORY_ERROR;
-        }
-        Emitter::Off(eventId, callback);
-        return SUCCESS_CODE;
+int32_t CJ_OffWithStringCallback(char* eventId, CEventCallback callbackInfo)
+{
+    auto callback = CreateCallback(callbackInfo);
+    if (callback == nullptr) {
+        return MEMORY_ERROR;
     }
+    Emitter::Off(eventId, callback);
+    return SUCCESS_CODE;
+}
 
-    void CJ_EmitWithId(uint32_t eventId, uint32_t priority, CEventData data)
-    {
-        Emitter::Emit(eventId, priority, data);
-    }
+void CJ_EmitWithId(uint32_t eventId, uint32_t priority, CEventData data)
+{
+    Emitter::Emit(eventId, priority, data);
+}
 
-    void CJ_EmitWithString(char* eventId, uint32_t priority, CEventData data)
-    {
-        Emitter::Emit(eventId, priority, data);
-    }
+void CJ_EmitWithString(char* eventId, uint32_t priority, CEventData data)
+{
+    Emitter::Emit(eventId, priority, data);
+}
 
-    uint32_t CJ_GetListenerCountById(uint32_t eventId)
-    {
-        auto ret = Emitter::GetListenerCount(eventId);
-        return ret;
-    }
+uint32_t CJ_GetListenerCountById(uint32_t eventId)
+{
+    auto ret = Emitter::GetListenerCount(eventId);
+    return ret;
+}
 
-    uint32_t CJ_GetListenerCountByString(char* eventId)
-    {
-        auto ret = Emitter::GetListenerCount(std::string(eventId));
-        return ret;
+uint32_t CJ_GetListenerCountByString(char* eventId)
+{
+    auto ret = Emitter::GetListenerCount(std::string(eventId));
+    return ret;
+}
+
+FFI_EXPORT void FfiOHOSEmitterOnU32Event(int64_t id)
+{
+    auto callback = CJLambda::Create(reinterpret_cast<void (*)(uint32_t, CEventData)>(id));
+    if (callback == nullptr) {
+        LOGE("Failed to create callback.");
+        return;
     }
+    Emitter::On(callback);
+}
+
+FFI_EXPORT void FfiOHOSEmitterOnStringEvent(int64_t id)
+{
+    auto callback = CJLambda::Create(reinterpret_cast<void (*)(const char*, CEventData)>(id));
+    if (callback == nullptr) {
+        LOGE("Failed to create callback.");
+        return;
+    }
+    Emitter::On(callback);
+}
+
+FFI_EXPORT void FfiOHOSEmitterEmitWithId(uint32_t eventId, uint32_t priority, CEventData data)
+{
+    Emitter::Emit(eventId, priority, data);
+}
+
+FFI_EXPORT void FfiOHOSEmitterEmitWithString(char* eventId, uint32_t priority, CEventData data)
+{
+    Emitter::Emit(eventId, priority, data);
+}
 }
