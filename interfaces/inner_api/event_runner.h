@@ -22,6 +22,7 @@
 #include "dumper.h"
 #include "event_inner_logger.h"
 #include "inner_event.h"
+#include "local_handle_adapter.h"
 
 namespace OHOS {
 namespace AppExecFwk {
@@ -304,6 +305,63 @@ public:
     }
 
     /**
+     * set eventRunner env param
+     *
+     * @param env current env
+     */
+    inline void EventSetEnvToHandler(void* env)
+    {
+        env_ = env;
+    }
+
+    /**
+     * Get current env.
+     *
+     * @return current env.
+     */
+    inline void* GetHandleEnv()
+    {
+        return env_;
+    }
+
+    /**
+     * set EventOpenLocalHandleFunc and EventCloseLocalHandleFunc
+     *
+     * @param openFunc eventOpenLocalHandleFunc
+     * @param closeFunc eventCloseLocalHandleFunc
+     */
+    inline void RegisterLocalHandleCallback(EventOpenLocalHandleFunc openFunc, EventCloseLocalHandleFunc closeFunc)
+    {
+        LocalHandleAdapter::GetInstance().SetLocalHandleFunc(openFunc, closeFunc);
+    }
+
+    /**
+     * execute current openLocalHandleFunc
+     *
+     * @param localHandle localHandle
+     */
+    inline void EventOpenLocalHandle(void** localHandle)
+    {
+        auto openFunc = LocalHandleAdapter::GetInstance().openLocalHandleFunc;
+        if (env_ != nullptr && openFunc != nullptr) {
+            openFunc(env_, localHandle);
+        }
+    }
+
+    /**
+     * execute current closeLocalHandleFunc
+     *
+     * @param localHandle localHandle
+     */
+    inline void EventCloseLocalHandle(void* localHandle)
+    {
+        auto closeFunc = LocalHandleAdapter::GetInstance().closeLocalHandleFunc;
+        if (env_ != nullptr && closeFunc != nullptr) {
+            closeFunc(env_, localHandle);
+        }
+    }
+
+    /**
      * Check if the current application is the main thread.
      */
     static bool IsAppMainThread();
@@ -359,6 +417,7 @@ private:
     Mode runningMode_ = Mode::DEFAULT;
     ThreadMode threadMode_ = ThreadMode::NEW_THREAD;
     std::string runnerId_;
+    void* env_{nullptr};
 };
 }  // namespace AppExecFwk
 namespace EventHandling = AppExecFwk;

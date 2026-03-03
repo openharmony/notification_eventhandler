@@ -36,7 +36,8 @@
 #include "event_queue_ffrt.h"
 #include "ffrt_inner.h"
 #endif  // FFRT_USAGE_ENABLE
-
+#include "local_handle_adapter.h"
+#include "event_hitrace_meter_adapter.h"
 
 namespace OHOS {
 namespace AppExecFwk {
@@ -341,6 +342,9 @@ public:
             return;
         }
 
+        if (owner_.lock() == EventRunner::GetMainEventRunner()) {
+            mainRunnerFlag_ = true;
+        }
         threadId_ = std::this_thread::get_id();
         kernelThreadId_ = getproctid();
 
@@ -387,7 +391,18 @@ public:
     {
         // Default running loop
         for (auto event = queue_->GetEvent(); event; event = queue_->GetEvent()) {
+            void* localHandle = nullptr;
+            if (mainRunnerFlag_) {
+                StartTraceAdapterMsg("EnterOpenlocalHandle");
+                EventRunner::GetMainEventRunner()->EventOpenLocalHandle(&localHandle);
+                FinishTraceAdapter();
+            }
             ExecuteEventHandler(event);
+            if (mainRunnerFlag_) {
+                StartTraceAdapterMsg("EnterCloselocalHandle");
+                EventRunner::GetMainEventRunner()->EventCloseLocalHandle(localHandle);
+                FinishTraceAdapter();
+            }
         }
     }
 
