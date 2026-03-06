@@ -24,6 +24,7 @@ inner_api_sources = [
   "${frameworks_path}/eventhandler/src/file_descriptor_listener.cpp",
   "${frameworks_path}/eventhandler/src/frame_report_sched.cpp",
   "${frameworks_path}/eventhandler/src/inner_event.cpp",
+  "${frameworks_path}/eventhandler/src/local_handle_adapter.cpp",
   "${frameworks_path}/eventhandler/src/native_implement_eventhandler.cpp",
   "${frameworks_path}/eventhandler/src/none_io_waiter.cpp",
 ]
