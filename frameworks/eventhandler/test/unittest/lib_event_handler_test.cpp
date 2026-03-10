@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include "async_stack_adapter.h"
 #include "local_handle_adapter.h"
+#include "lock_base.h"
+#include "std_lock.h"
 
 using namespace testing::ext;
 using namespace OHOS;
@@ -558,4 +560,21 @@ HWTEST_F(LibEventHandlerTest, LocalHandle_001, TestSize.Level1)
     void* localHandle = nullptr;
     runner->EventOpenLocalHandle(&localHandle);
     runner->EventCloseLocalHandle(localHandle);
+}
+
+/*
+ * @tc.name: LockTest_001
+ * @tc.desc: LockTest_001 test
+ * @tc.type: FUNC
+ */
+HWTEST_F(LibEventHandlerTest, LockTest_001, TestSize.Level1)
+{
+    StdLock lock;
+    UniqueLockBase lockBase(lock);
+    lockBase.unlock();
+    UniqueLockBase lockBase1(lock);
+    lockBase1 = std::move(lockBase);
+    lockBase1.unlock();
+    auto handler = std::make_shared<EventHandler>(nullptr);
+    EXPECT_NE(nullptr, handler);
 }
