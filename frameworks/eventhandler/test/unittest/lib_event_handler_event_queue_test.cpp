@@ -2908,8 +2908,7 @@ HWTEST_F(LibEventHandlerEventQueueTest, TryEpollFdTest_001, TestSize.Level1)
 {
     EventQueueBase queue(EventLockType::STANDARD);
     auto now = InnerEvent::Clock::now();
-    UniqueLockBase temp(*(queue.queueLock_));
-    UniqueLockBase lock = std::move(temp);
+    UniqueLockBase lock(*(queue.queueLock_));
     queue.sumOfPendingVsync_ = 1;
     queue.TryEpollFd(now, lock);
     queue.sumOfPendingVsync_ = 0;
